@@ -71,11 +71,7 @@ private extension LayoutManager {
 
             enumerateLineFragments(forGlyphRange: blockquoteGlyphRange) { (rect, usedRect, textContainer, glyphRange, stop) in
                 let startIndent = paragraphStyle.indentToFirst(Blockquote.self) - Metrics.listTextIndentation
-
-                let lineRange = self.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
-                let lineCharacters = textStorage.attributedSubstring(from: lineRange).string
-                let lineEndsParagraph = lineCharacters.isEndOfParagraph(before: lineCharacters.endIndex)
-                let blockquoteRect = self.blockquoteRect(origin: origin, lineRect: rect, blockquoteIndent: startIndent, lineEndsParagraph: lineEndsParagraph)
+                let blockquoteRect = self.blockquoteRect(origin: origin, lineRect: rect, blockquoteIndent: startIndent)
 
                 backgroundRect = backgroundRect.map { $0.union(blockquoteRect.integral) } ?? blockquoteRect.integral
             }
@@ -104,7 +100,7 @@ private extension LayoutManager {
         }
 
         let extraIndent = paragraphStyle.indentToLast(Blockquote.self)
-        let extraRect = blockquoteRect(origin: origin, lineRect: extraLineFragmentRect, blockquoteIndent: extraIndent, lineEndsParagraph: false)
+        let extraRect = blockquoteRect(origin: origin, lineRect: extraLineFragmentRect, blockquoteIndent: extraIndent)
 
         drawBlockquoteBackground(in: extraRect.integral, with: context)
         drawBlockquoteBorder(in: extraRect.integral, with: context, at: 0)
@@ -121,17 +117,12 @@ private extension LayoutManager {
     ///
     /// - Returns: Rect in which we should render the blockquote.
     ///
-    private func blockquoteRect(origin: CGPoint, lineRect: CGRect, blockquoteIndent: CGFloat, lineEndsParagraph: Bool) -> CGRect {
+    private func blockquoteRect(origin: CGPoint, lineRect: CGRect, blockquoteIndent: CGFloat) -> CGRect {
         var blockquoteRect = lineRect.offsetBy(dx: origin.x, dy: origin.y)
         
         let paddingWidth = blockquoteIndent
         blockquoteRect.origin.x += paddingWidth
         blockquoteRect.size.width -= paddingWidth
-
-        // Ref. Issue #645: Cheking if we this a middle line inside a blockquote paragraph
-        if lineEndsParagraph {
-            blockquoteRect.size.height -= Metrics.paragraphSpacing * 0.5
-        }
 
         return blockquoteRect
     }
