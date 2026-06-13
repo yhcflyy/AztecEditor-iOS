@@ -65,11 +65,11 @@ private extension LayoutManager {
             guard let paragraphStyle = object as? ParagraphStyle, !paragraphStyle.blockquotes.isEmpty else {
                 return
             }
-                        
+
             let blockquoteGlyphRange = glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            var backgroundRect: CGRect?
 
             enumerateLineFragments(forGlyphRange: blockquoteGlyphRange) { (rect, usedRect, textContainer, glyphRange, stop) in
-                
                 let startIndent = paragraphStyle.indentToFirst(Blockquote.self) - Metrics.listTextIndentation
 
                 let lineRange = self.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
@@ -77,17 +77,18 @@ private extension LayoutManager {
                 let lineEndsParagraph = lineCharacters.isEndOfParagraph(before: lineCharacters.endIndex)
                 let blockquoteRect = self.blockquoteRect(origin: origin, lineRect: rect, blockquoteIndent: startIndent, lineEndsParagraph: lineEndsParagraph)
 
-                self.drawBlockquoteBackground(in: blockquoteRect.integral, with: context)
-                
-                let nestDepth = paragraphStyle.blockquoteNestDepth
-                for index in 0...nestDepth {
-                    let indent = paragraphStyle.indent(to: index, of: Blockquote.self) - Metrics.listTextIndentation
+                backgroundRect = backgroundRect.map { $0.union(blockquoteRect.integral) } ?? blockquoteRect.integral
+            }
 
-                    let nestRect = self.blockquoteRect(origin: origin, lineRect: rect, blockquoteIndent: indent, lineEndsParagraph: lineEndsParagraph)
+            guard let backgroundRect else {
+                return
+            }
 
-                    self.drawBlockquoteBorder(in: nestRect.integral, with: context, at: index)
-                }
-            
+            self.drawBlockquoteBackground(in: backgroundRect.integral, with: context)
+
+            let nestDepth = paragraphStyle.blockquoteNestDepth
+            for index in 0...nestDepth {
+                self.drawBlockquoteBorder(in: backgroundRect.integral, with: context, at: index)
             }
         }
 
@@ -400,4 +401,3 @@ extension LayoutManager {
         drawUnderline(forGlyphRange: updatedGlyphRange, underlineType: underlineVal, baselineOffset: 0, lineFragmentRect: lineRect, lineFragmentGlyphRange: lineGlyphRange, containerOrigin: containerOrigin)
     }
 }
-
